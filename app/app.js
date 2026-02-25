@@ -16,7 +16,7 @@ async function registerSW() {
         return null;
     }
     try {
-        const reg = await navigator.serviceWorker.register('/app/service-worker.js', { scope: '/app/' });
+        const reg = await navigator.serviceWorker.register('/pwa-deeplink/app/service-worker.js', { scope: '/pwa-deeplink/app/' });
         await navigator.serviceWorker.ready;
         return reg;
     } catch (err) {

@@ -36,7 +36,7 @@ const stepInfo = document.getElementById('step-info');
 const logContainer = document.getElementById('log');
 const spinner = document.getElementById('spinner');
 
-const FALLBACK_URL = '/app/fallback.html';
+const FALLBACK_URL = '/pwa-deeplink/app/fallback.html';
 
 function addLog(text, type) {
     const el = document.createElement('div');

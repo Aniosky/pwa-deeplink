@@ -43,11 +43,11 @@ self.addEventListener('notificationclick', (event) => {
                 // Find an existing PWA window and tell it to navigate via postMessage
                 // (client.navigate() and client.focus() are not supported on iOS)
                 for (const client of windowClients) {
-                    client.postMessage({ type: 'navigate', url: '/app/deeplink-runner.html' });
+                    client.postMessage({ type: 'navigate', url: '/pwa-deeplink/app/deeplink-runner.html' });
                     return;
                 }
                 // No existing window — fall back to openWindow (works in browser mode)
-                return clients.openWindow('/app/deeplink-runner.html');
+                return clients.openWindow('/pwa-deeplink/app/deeplink-runner.html');
             });
         })
     );
