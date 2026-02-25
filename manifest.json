@@ -1,0 +1,21 @@
+{
+    "name": "PWA Deep Link",
+    "short_name": "DeepLink",
+    "start_url": "/app/",
+    "scope": "/app/",
+    "display": "standalone",
+    "background_color": "#1a1a2e",
+    "theme_color": "#1a1a2e",
+    "icons": [
+        {
+            "src": "/app/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/app/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
