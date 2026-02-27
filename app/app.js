@@ -45,6 +45,37 @@ function initUUID() {
 
 initUUID();
 
+// =============== Correlation ID ===============
+function initCorrelation() {
+    var valEl = document.getElementById('correlation-value');
+    var srcEl = document.getElementById('correlation-source');
+    var mode = navigator.standalone ? 'Standalone (PWA)' : 'Browser (Safari)';
+
+    // 1. Check query param (Safari landing)
+    var params = new URLSearchParams(window.location.search);
+    var fromUrl = params.get('correlation');
+
+    if (fromUrl) {
+        setCookie('correlation_id', fromUrl, 365);
+        valEl.textContent = fromUrl;
+        srcEl.textContent = mode + ' — saved from URL param';
+        return;
+    }
+
+    // 2. Check cookie (PWA open)
+    var fromCookie = getCookie('correlation_id');
+    if (fromCookie) {
+        valEl.textContent = fromCookie;
+        srcEl.textContent = mode + ' — read from cookie';
+        return;
+    }
+
+    valEl.textContent = '—';
+    srcEl.textContent = 'No correlation param. Use ?correlation=XXX';
+}
+
+initCorrelation();
+
 // =============== Service Worker ===============
 async function registerSW() {
     if (!('serviceWorker' in navigator)) {

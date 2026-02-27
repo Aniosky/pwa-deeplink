@@ -56,12 +56,18 @@
 </head>
 <body>
     <div class="container">
-        <h1>Push & Deep Link v1.8</h1>
+        <h1>Push & Deep Link v1.9</h1>
 
-        <div id="uuid-box" style="margin-bottom:20px; padding:14px; background:#16213e; border:1px solid #0f3460; border-radius:10px; text-align:center;">
+        <div id="uuid-box" style="margin-bottom:12px; padding:14px; background:#16213e; border:1px solid #0f3460; border-radius:10px; text-align:center;">
             <div style="font-size:0.75rem; color:#666; margin-bottom:4px;">Client UUID</div>
             <div id="uuid-value" style="font-size:0.95rem; color:#7ec8e3; word-break:break-all; font-family:monospace;"></div>
             <div id="uuid-source" style="font-size:0.7rem; color:#555; margin-top:4px;"></div>
+        </div>
+
+        <div id="correlation-box" style="margin-bottom:20px; padding:14px; background:#16213e; border:1px solid #0f3460; border-radius:10px; text-align:center;">
+            <div style="font-size:0.75rem; color:#666; margin-bottom:4px;">Correlation ID</div>
+            <div id="correlation-value" style="font-size:0.95rem; color:#e9a560; word-break:break-all; font-family:monospace;">—</div>
+            <div id="correlation-source" style="font-size:0.7rem; color:#555; margin-top:4px;"></div>
         </div>
 
         <button id="sendPush" class="btn btn-primary">Send Push Notification</button>
