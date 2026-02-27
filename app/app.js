@@ -8,6 +8,43 @@ function showStatus(message, type) {
     statusEl.className = 'status ' + type;
 }
 
+// =============== UUID ===============
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0;
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+}
+
+function getCookie(name) {
+    var match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
+function setCookie(name, value, days) {
+    var expires = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
+}
+
+function initUUID() {
+    var uuidEl = document.getElementById('uuid-value');
+    var sourceEl = document.getElementById('uuid-source');
+    var existing = getCookie('client_uuid');
+    var mode = navigator.standalone ? 'Standalone (PWA)' : 'Browser (Safari)';
+
+    if (existing) {
+        uuidEl.textContent = existing;
+        sourceEl.textContent = mode + ' — read from cookie';
+    } else {
+        var uuid = generateUUID();
+        setCookie('client_uuid', uuid, 365);
+        uuidEl.textContent = uuid;
+        sourceEl.textContent = mode + ' — generated & saved';
+    }
+}
+
+initUUID();
+
 // =============== Service Worker ===============
 async function registerSW() {
     if (!('serviceWorker' in navigator)) {
