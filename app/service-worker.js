@@ -1,3 +1,4 @@
+// v2.0
 const DB_NAME = 'deeplink-store';
 const STORE_NAME = 'pending';
 
