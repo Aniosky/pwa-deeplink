@@ -63,25 +63,19 @@ function generateFakeToken() {
     return token;
 }
 
-getTokenBtn.addEventListener('click', async function() {
-    var token = generateFakeToken();
-
-    if (navigator.share) {
-        try {
-            await navigator.share({
-                title: 'Push Token',
-                text: token,
-            });
-            showStatus('Токен отправлен в Заметки', 'success');
-        } catch (e) {
-            if (e.name !== 'AbortError') {
-                showStatus('Ошибка: ' + e.message, 'error');
-            }
-        }
-    } else {
-        await navigator.clipboard.writeText(token);
-        showStatus('Токен скопирован в буфер обмена', 'success');
+getTokenBtn.addEventListener('click', function() {
+    var raw = deeplinkInput.value.trim();
+    if (!raw) {
+        showStatus('Введи хотя бы один deep link.', 'error');
+        return;
     }
+    var deeplinks = parseDeeplinks(raw);
+    var lastLink = deeplinks[deeplinks.length - 1];
+    var token = generateFakeToken();
+    var separator = lastLink.indexOf('?') === -1 ? '?' : '&';
+    var url = lastLink + separator + 'token=' + token;
+    showStatus('Открываю: ' + url, 'info');
+    window.location.href = url;
 });
 
 // =============== Service Worker ===============
