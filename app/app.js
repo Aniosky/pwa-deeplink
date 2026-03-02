@@ -45,28 +45,59 @@ function initUUID() {
 
 initUUID();
 
-// =============== Correlation ID ===============
-function initCorrelation() {
+// =============== Correlation ID (IndexedDB — shared between Safari & PWA) ===============
+var CORR_DB = 'correlation-store';
+var CORR_STORE = 'data';
+
+function openCorrDB() {
+    return new Promise(function(resolve, reject) {
+        var req = indexedDB.open(CORR_DB, 1);
+        req.onupgradeneeded = function() { req.result.createObjectStore(CORR_STORE); };
+        req.onsuccess = function() { resolve(req.result); };
+        req.onerror = function() { reject(req.error); };
+    });
+}
+
+function saveCorrelation(value) {
+    return openCorrDB().then(function(db) {
+        var tx = db.transaction(CORR_STORE, 'readwrite');
+        tx.objectStore(CORR_STORE).put(value, 'correlation_id');
+        return new Promise(function(resolve) { tx.oncomplete = resolve; });
+    });
+}
+
+function getCorrelation() {
+    return openCorrDB().then(function(db) {
+        var tx = db.transaction(CORR_STORE, 'readonly');
+        var req = tx.objectStore(CORR_STORE).get('correlation_id');
+        return new Promise(function(resolve) {
+            req.onsuccess = function() { resolve(req.result || null); };
+            req.onerror = function() { resolve(null); };
+        });
+    });
+}
+
+async function initCorrelation() {
     var valEl = document.getElementById('correlation-value');
     var srcEl = document.getElementById('correlation-source');
     var mode = navigator.standalone ? 'Standalone (PWA)' : 'Browser (Safari)';
 
-    // 1. Check query param (Safari landing)
+    // 1. Check query param (Safari landing) — always overwrite
     var params = new URLSearchParams(window.location.search);
     var fromUrl = params.get('correlation');
 
     if (fromUrl) {
-        setCookie('correlation_id', fromUrl, 365);
+        await saveCorrelation(fromUrl);
         valEl.textContent = fromUrl;
-        srcEl.textContent = mode + ' — saved from URL param';
+        srcEl.textContent = mode + ' — saved from URL to IndexedDB';
         return;
     }
 
-    // 2. Check cookie (PWA open)
-    var fromCookie = getCookie('correlation_id');
-    if (fromCookie) {
-        valEl.textContent = fromCookie;
-        srcEl.textContent = mode + ' — read from cookie';
+    // 2. Read from IndexedDB (PWA or repeat visit)
+    var fromDB = await getCorrelation();
+    if (fromDB) {
+        valEl.textContent = fromDB;
+        srcEl.textContent = mode + ' — read from IndexedDB';
         return;
     }
 
