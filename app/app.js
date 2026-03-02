@@ -69,13 +69,19 @@ getTokenBtn.addEventListener('click', function() {
         showStatus('Введи хотя бы один deep link.', 'error');
         return;
     }
-    var deeplinks = parseDeeplinks(raw);
-    var lastLink = deeplinks[deeplinks.length - 1];
+    var lines = raw.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+    var lastLink = lines[lines.length - 1];
     var token = generateFakeToken();
     var separator = lastLink.indexOf('?') === -1 ? '?' : '&';
     var url = lastLink + separator + 'token=' + token;
     showStatus('Открываю: ' + url, 'info');
-    window.location.href = url;
+
+    // Создаём временную ссылку и кликаем — надёжнее для кастомных схем в PWA
+    var a = document.createElement('a');
+    a.href = url;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 });
 
 // =============== Service Worker ===============
