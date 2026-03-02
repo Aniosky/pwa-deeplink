@@ -25,10 +25,12 @@
             display: block; width: 100%; padding: 14px; border: none;
             border-radius: 10px; font-size: 1rem; font-weight: 600;
             cursor: pointer; text-align: center; text-decoration: none;
+            margin-bottom: 10px;
         }
         .btn:active { opacity: 0.8; }
         .btn-primary { background: #e94560; color: #fff; }
         .btn-primary:disabled { background: #555; cursor: not-allowed; }
+        .btn-secondary { background: #0f3460; color: #7ec8e3; }
         .input-group { margin-top: 16px; }
         .input-group label { display: block; margin-bottom: 6px; font-size: 0.875rem; color: #aaa; }
         .input-group input,
@@ -52,39 +54,43 @@
         .status.success { background: #1a2e1a; border: 1px solid #306030; color: #70e870; display: block; }
         .hint { margin-top: 12px; font-size: 0.75rem; color: #666; text-align: center; }
 
+        .corr-box {
+            margin-bottom: 24px; padding: 18px;
+            background: linear-gradient(135deg, #0f3460, #16213e);
+            border: 2px solid #e94560;
+            border-radius: 14px; text-align: center;
+        }
+        .corr-label { font-size: 0.8rem; color: #e94560; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .corr-value { font-size: 1.3rem; color: #fff; word-break: break-all; font-family: monospace; font-weight: 700; }
+        .corr-source { font-size: 0.7rem; color: #555; margin-top: 6px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Push & Deep Link v2.2</h1>
+        <h1>Push & Deep Link v2.3</h1>
 
-        <div id="uuid-box" style="margin-bottom:12px; padding:14px; background:#16213e; border:1px solid #0f3460; border-radius:10px; text-align:center;">
-            <div style="font-size:0.75rem; color:#666; margin-bottom:4px;">Client UUID</div>
-            <div id="uuid-value" style="font-size:0.95rem; color:#7ec8e3; word-break:break-all; font-family:monospace;"></div>
-            <div id="uuid-source" style="font-size:0.7rem; color:#555; margin-top:4px;"></div>
+        <div class="corr-box">
+            <div class="corr-label">Correlation ID</div>
+            <div id="correlation-value" class="corr-value">—</div>
+            <div id="correlation-source" class="corr-source"></div>
         </div>
 
-        <div id="correlation-box" style="margin-bottom:20px; padding:14px; background:#16213e; border:1px solid #0f3460; border-radius:10px; text-align:center;">
-            <div style="font-size:0.75rem; color:#666; margin-bottom:4px;">Correlation ID</div>
-            <div id="correlation-value" style="font-size:0.95rem; color:#e9a560; word-break:break-all; font-family:monospace;">—</div>
-            <div id="correlation-source" style="font-size:0.7rem; color:#555; margin-top:4px;"></div>
-        </div>
-
-        <button id="sendPush" class="btn btn-primary">Send Push Notification</button>
+        <button id="sendPush" class="btn btn-primary">Отправить Push</button>
+        <button id="getToken" class="btn btn-secondary">Получить Push-токен</button>
 
         <div class="input-group">
-            <label for="deeplink">Deep Links (one per line)</label>
+            <label for="deeplink">Deep Links (по одному на строку)</label>
             <textarea id="deeplink" rows="4" placeholder="myapp://open">invalidapp://nonexistent
 myapp://open</textarea>
         </div>
 
         <div class="input-group">
-            <label for="delay">Delay per attempt (ms)</label>
+            <label for="delay">Задержка на попытку (мс)</label>
             <input type="number" id="delay" placeholder="600" value="600" min="0" max="5000" step="100">
         </div>
 
         <div id="status" class="status"></div>
-        <p class="hint">Push opens a runner page that tries each deeplink in order.<br>First success wins. If all fail — fallback page is shown.</p>
+        <p class="hint">Push открывает страницу-раннер, которая пробует каждый deeplink по очереди.<br>Первый успешный — побеждает. Если все провалились — fallback.</p>
     </div>
 
     <script src="app.js"></script>

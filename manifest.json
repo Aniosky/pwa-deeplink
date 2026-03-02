@@ -1,5 +1,5 @@
 {
-    "name": "PWA Deep Link",
+    "name": "Push & Deep Link",
     "short_name": "DeepLink",
     "start_url": "/pwa-deeplink/app/",
     "scope": "/pwa-deeplink/app/",

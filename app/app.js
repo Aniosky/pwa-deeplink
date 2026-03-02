@@ -1,4 +1,5 @@
 const sendBtn = document.getElementById('sendPush');
+const getTokenBtn = document.getElementById('getToken');
 const deeplinkInput = document.getElementById('deeplink');
 const delayInput = document.getElementById('delay');
 const statusEl = document.getElementById('status');
@@ -8,14 +9,7 @@ function showStatus(message, type) {
     statusEl.className = 'status ' + type;
 }
 
-// =============== UUID ===============
-function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0;
-        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-    });
-}
-
+// =============== Cookies ===============
 function getCookie(name) {
     var match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
     return match ? decodeURIComponent(match[1]) : null;
@@ -26,26 +20,7 @@ function setCookie(name, value, days) {
     document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
 }
 
-function initUUID() {
-    var uuidEl = document.getElementById('uuid-value');
-    var sourceEl = document.getElementById('uuid-source');
-    var existing = getCookie('client_uuid');
-    var mode = navigator.standalone ? 'Standalone (PWA)' : 'Browser (Safari)';
-
-    if (existing) {
-        uuidEl.textContent = existing;
-        sourceEl.textContent = mode + ' — read from cookie';
-    } else {
-        var uuid = generateUUID();
-        setCookie('client_uuid', uuid, 365);
-        uuidEl.textContent = uuid;
-        sourceEl.textContent = mode + ' — generated & saved';
-    }
-}
-
-initUUID();
-
-// =============== Correlation ID (cookies — shared between Safari & PWA on iOS) ===============
+// =============== Correlation ID ===============
 function refreshCorrelation() {
     var valEl = document.getElementById('correlation-value');
     var srcEl = document.getElementById('correlation-source');
@@ -57,34 +32,62 @@ function refreshCorrelation() {
     if (fromUrl) {
         setCookie('correlation_id', fromUrl, 365);
         valEl.textContent = fromUrl;
-        srcEl.textContent = mode + ' — saved from URL to cookie';
+        srcEl.textContent = mode + ' — сохранено из URL';
         return;
     }
 
     var fromCookie = getCookie('correlation_id');
     if (fromCookie) {
         valEl.textContent = fromCookie;
-        srcEl.textContent = mode + ' — read from cookie';
+        srcEl.textContent = mode + ' — из cookie';
         return;
     }
 
     valEl.textContent = '—';
-    srcEl.textContent = 'No correlation. Use ?correlation=XXX';
+    srcEl.textContent = 'Нет correlation. Используй ?correlation=XXX';
 }
 
 refreshCorrelation();
 
-// Re-read correlation when PWA returns from background
 document.addEventListener('visibilitychange', function() {
-    if (!document.hidden) {
-        refreshCorrelation();
+    if (!document.hidden) refreshCorrelation();
+});
+
+// =============== Fake Push Token ===============
+function generateFakeToken() {
+    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    var token = '';
+    for (var i = 0; i < 163; i++) {
+        token += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return token;
+}
+
+getTokenBtn.addEventListener('click', async function() {
+    var token = generateFakeToken();
+
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Push Token',
+                text: token,
+            });
+            showStatus('Токен отправлен в Заметки', 'success');
+        } catch (e) {
+            if (e.name !== 'AbortError') {
+                showStatus('Ошибка: ' + e.message, 'error');
+            }
+        }
+    } else {
+        await navigator.clipboard.writeText(token);
+        showStatus('Токен скопирован в буфер обмена', 'success');
     }
 });
 
 // =============== Service Worker ===============
 async function registerSW() {
     if (!('serviceWorker' in navigator)) {
-        showStatus('Service Worker not supported.', 'error');
+        showStatus('Service Worker не поддерживается.', 'error');
         sendBtn.disabled = true;
         return null;
     }
@@ -93,7 +96,7 @@ async function registerSW() {
         await navigator.serviceWorker.ready;
         return reg;
     } catch (err) {
-        showStatus('SW failed: ' + err.message, 'error');
+        showStatus('SW ошибка: ' + err.message, 'error');
         sendBtn.disabled = true;
         return null;
     }
@@ -102,17 +105,17 @@ async function registerSW() {
 // =============== Notifications ===============
 async function requestPermission() {
     if (!('Notification' in window)) {
-        showStatus('Notifications not supported.', 'error');
+        showStatus('Уведомления не поддерживаются.', 'error');
         return false;
     }
     if (Notification.permission === 'granted') return true;
     if (Notification.permission === 'denied') {
-        showStatus('Notifications denied. Enable in Settings.', 'error');
+        showStatus('Уведомления запрещены. Включи в Настройках.', 'error');
         return false;
     }
     const result = await Notification.requestPermission();
     if (result === 'granted') return true;
-    showStatus('Permission not granted.', 'error');
+    showStatus('Разрешение не получено.', 'error');
     return false;
 }
 
@@ -126,7 +129,7 @@ function parseDeeplinks(raw) {
 async function sendNotification(registration) {
     const raw = deeplinkInput.value.trim();
     if (!raw) {
-        showStatus('Enter at least one deep link URL.', 'error');
+        showStatus('Введи хотя бы один deep link.', 'error');
         return;
     }
     const allowed = await requestPermission();
@@ -136,15 +139,15 @@ async function sendNotification(registration) {
     const delay = parseInt(delayInput.value) || 600;
 
     const body = deeplinks.length === 1
-        ? 'Tap to open: ' + deeplinks[0]
-        : 'Tap to try ' + deeplinks.length + ' deeplinks';
+        ? 'Нажми чтобы открыть: ' + deeplinks[0]
+        : 'Нажми чтобы попробовать ' + deeplinks.length + ' ссылок';
 
-    registration.showNotification('Open App', {
+    registration.showNotification('Открыть приложение', {
         body: body,
         data: { deeplinks: deeplinks, delay: delay },
         requireInteraction: true,
     });
-    showStatus('Notification sent! (' + deeplinks.length + ' deeplink(s))', 'success');
+    showStatus('Push отправлен! (' + deeplinks.length + ' ссылок)', 'success');
 }
 
 // =============== SW message handler ===============
@@ -159,7 +162,6 @@ navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', (
     const registration = await registerSW();
     if (!registration) return;
 
-    // Force SW update check + auto-reload on new version
     registration.update();
     registration.addEventListener('updatefound', () => {
         var newSW = registration.installing;
@@ -171,7 +173,7 @@ navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', (
     });
 
     const mode = navigator.standalone ? 'Standalone' : 'Browser';
-    showStatus('Ready. Mode: ' + mode, 'info');
+    showStatus('Готово. Режим: ' + mode, 'info');
 
     sendBtn.addEventListener('click', () => sendNotification(registration));
 })();
