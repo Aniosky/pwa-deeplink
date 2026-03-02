@@ -1,22 +1,11 @@
-// v2.1
+// v2.2
 const DB_NAME = 'deeplink-store';
 const STORE_NAME = 'pending';
-const CORR_DB = 'correlation-store';
-const CORR_STORE = 'data';
 
 function openDB() {
     return new Promise((resolve, reject) => {
         const req = indexedDB.open(DB_NAME, 1);
         req.onupgradeneeded = () => req.result.createObjectStore(STORE_NAME);
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-    });
-}
-
-function openCorrDB() {
-    return new Promise((resolve, reject) => {
-        const req = indexedDB.open(CORR_DB, 1);
-        req.onupgradeneeded = () => req.result.createObjectStore(CORR_STORE);
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
     });
@@ -29,23 +18,6 @@ async function savePendingDeeplink(data) {
     return new Promise((resolve) => { tx.oncomplete = resolve; });
 }
 
-async function saveCorrelation(value) {
-    const db = await openCorrDB();
-    const tx = db.transaction(CORR_STORE, 'readwrite');
-    tx.objectStore(CORR_STORE).put(value, 'correlation_id');
-    return new Promise((resolve) => { tx.oncomplete = resolve; });
-}
-
-async function getCorrelation() {
-    const db = await openCorrDB();
-    const tx = db.transaction(CORR_STORE, 'readonly');
-    const req = tx.objectStore(CORR_STORE).get('correlation_id');
-    return new Promise((resolve) => {
-        req.onsuccess = () => resolve(req.result || null);
-        req.onerror = () => resolve(null);
-    });
-}
-
 self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
@@ -54,27 +26,16 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(clients.claim());
 });
 
-// Handle correlation read/write via postMessage (SW storage is shared between Safari & PWA)
-self.addEventListener('message', (event) => {
-    if (!event.data) return;
-
-    var port = event.ports && event.ports[0];
-
-    if (event.data.type === 'save-correlation') {
-        event.waitUntil(
-            saveCorrelation(event.data.value).then(() => {
-                if (port) port.postMessage({ type: 'correlation-saved' });
-            })
-        );
-    }
-
-    if (event.data.type === 'get-correlation') {
-        event.waitUntil(
-            getCorrelation().then((value) => {
-                if (port) port.postMessage({ type: 'correlation-value', value: value });
-            })
-        );
-    }
+// Network-first fetch: always try network, fall back to cache.
+// This prevents iOS from serving stale cached files.
+self.addEventListener('fetch', (event) => {
+    event.respondWith(
+        fetch(event.request).then((response) => {
+            return response;
+        }).catch(() => {
+            return caches.match(event.request);
+        })
+    );
 });
 
 self.addEventListener('notificationclick', (event) => {

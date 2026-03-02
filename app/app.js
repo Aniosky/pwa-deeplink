@@ -45,24 +45,41 @@ function initUUID() {
 
 initUUID();
 
-// =============== Correlation ID (via SW IndexedDB — shared between Safari & PWA) ===============
-function swMessage(msg) {
-    return new Promise(function(resolve) {
-        var channel = new MessageChannel();
-        channel.port1.onmessage = function(event) { resolve(event.data); };
-        navigator.serviceWorker.controller.postMessage(msg, [channel.port2]);
-    });
+// =============== Correlation ID (cookies — shared between Safari & PWA on iOS) ===============
+function refreshCorrelation() {
+    var valEl = document.getElementById('correlation-value');
+    var srcEl = document.getElementById('correlation-source');
+    var mode = navigator.standalone ? 'Standalone (PWA)' : 'Browser (Safari)';
+
+    var params = new URLSearchParams(window.location.search);
+    var fromUrl = params.get('correlation');
+
+    if (fromUrl) {
+        setCookie('correlation_id', fromUrl, 365);
+        valEl.textContent = fromUrl;
+        srcEl.textContent = mode + ' — saved from URL to cookie';
+        return;
+    }
+
+    var fromCookie = getCookie('correlation_id');
+    if (fromCookie) {
+        valEl.textContent = fromCookie;
+        srcEl.textContent = mode + ' — read from cookie';
+        return;
+    }
+
+    valEl.textContent = '—';
+    srcEl.textContent = 'No correlation. Use ?correlation=XXX';
 }
 
-function swSaveCorrelation(value) {
-    return swMessage({ type: 'save-correlation', value: value });
-}
+refreshCorrelation();
 
-function swGetCorrelation() {
-    return swMessage({ type: 'get-correlation' });
-}
-
-// initCorrelation is called after SW is ready (see Init section below)
+// Re-read correlation when PWA returns from background
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        refreshCorrelation();
+    }
+});
 
 // =============== Service Worker ===============
 async function registerSW() {
@@ -131,8 +148,6 @@ async function sendNotification(registration) {
 }
 
 // =============== SW message handler ===============
-// On iOS standalone PWA, the SW cannot use clients.openWindow() or client.navigate().
-// Instead the SW sends a postMessage and we navigate from the page itself.
 navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'navigate') {
         window.location.href = event.data.url;
@@ -144,34 +159,19 @@ navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', (
     const registration = await registerSW();
     if (!registration) return;
 
-    // Force SW update check on every load
+    // Force SW update check + auto-reload on new version
     registration.update();
+    registration.addEventListener('updatefound', () => {
+        var newSW = registration.installing;
+        newSW.addEventListener('statechange', () => {
+            if (newSW.state === 'activated') {
+                window.location.reload();
+            }
+        });
+    });
 
     const mode = navigator.standalone ? 'Standalone' : 'Browser';
     showStatus('Ready. Mode: ' + mode, 'info');
-
-    // Correlation — runs after SW is active
-    var valEl = document.getElementById('correlation-value');
-    var srcEl = document.getElementById('correlation-source');
-    var modeLabel = navigator.standalone ? 'Standalone (PWA)' : 'Browser (Safari)';
-
-    var params = new URLSearchParams(window.location.search);
-    var fromUrl = params.get('correlation');
-
-    if (fromUrl) {
-        await swSaveCorrelation(fromUrl);
-        valEl.textContent = fromUrl;
-        srcEl.textContent = modeLabel + ' — saved via SW';
-    } else {
-        var resp = await swGetCorrelation();
-        if (resp && resp.value) {
-            valEl.textContent = resp.value;
-            srcEl.textContent = modeLabel + ' — read from SW';
-        } else {
-            valEl.textContent = '—';
-            srcEl.textContent = 'No correlation. Use ?correlation=XXX';
-        }
-    }
 
     sendBtn.addEventListener('click', () => sendNotification(registration));
 })();
