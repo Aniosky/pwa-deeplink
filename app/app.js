@@ -1,5 +1,6 @@
 const sendBtn = document.getElementById('sendPush');
 const getTokenBtn = document.getElementById('getToken');
+const clearCookieBtn = document.getElementById('clearCookie');
 const deeplinkInput = document.getElementById('deeplink');
 const delayInput = document.getElementById('delay');
 const statusEl = document.getElementById('status');
@@ -82,6 +83,14 @@ getTokenBtn.addEventListener('click', function() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+});
+
+// =============== Clear Cookie ===============
+clearCookieBtn.addEventListener('click', function() {
+    document.cookie = 'correlation_id=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax';
+    localStorage.setItem('isFromPwa', 'true');
+    refreshCorrelation();
+    showStatus('Кука очищена, isFromPwa = true', 'success');
 });
 
 // =============== Service Worker ===============
