@@ -87,6 +87,10 @@ getTokenBtn.addEventListener('click', function() {
 
 // =============== Clear Cookie ===============
 clearCookieBtn.addEventListener('click', function() {
+    if (!getCookie('correlation_id')) {
+        showStatus('Кука correlation_id не найдена', 'error');
+        return;
+    }
     document.cookie = 'correlation_id=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax';
     localStorage.setItem('isFromPwa', 'true');
     refreshCorrelation();
